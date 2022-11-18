@@ -17,9 +17,10 @@ def getTrainData(train_data):
         data = np.load(os.path.join('./data/raw/', f))
         data_ls.append(data)
     return np.concatenate(data_ls)
-def getTrainLabel("train_label"):
+
+def getTrainLabel(train_label):
     data_ls = []
-    for f in "train_label":
+    for f in train_label:
         data = np.load(os.path.join('./data/raw/', f))
         data_ls.append(data)
     return np.concatenate(data_ls)
