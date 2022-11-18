@@ -1,4 +1,5 @@
 {
+  "outdir": "./data/raw/",
   "train_data": ["X_1.npy", "X_2.npy", "X_3.npy", "X_4.npy", "X_5.npy"],
   "train_label": ["y_1.npy", "y_2.npy", "y_3.npy", "y_4.npy", "y_5.npy"],
   "test_data": ["X_test.npy"],
