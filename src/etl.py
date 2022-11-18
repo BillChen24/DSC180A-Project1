@@ -11,24 +11,47 @@
 
 import numpy as np
 import os
-def getTrainData(train_data):
-    data_ls = []
+# def getTrainData(train_data):
+#     data_ls = []
+#     for f in train_data:
+#         data = np.load(os.path.join('./data/raw/', f))
+#         data_ls.append(data)
+#     return np.concatenate(data_ls)
+#
+# def getTrainLabel(train_label):
+#     data_ls = []
+#     for f in train_label:
+#         data = np.load(os.path.join('./data/raw/', f))
+#         data_ls.append(data)
+#     return np.concatenate(data_ls)
+#
+# def getTestData(test_data):
+#     return np.load(os.path.join('./data/raw/', test_data))
+# def getTestLabel(test_label):
+#     return np.load(os.path.join('./data/raw/', test_label))
+def getData(train_data, train_label, test_data, test_label):
+    train_data_ls = []
     for f in train_data:
         data = np.load(os.path.join('./data/raw/', f))
-        data_ls.append(data)
-    return np.concatenate(data_ls)
+        train_data_ls.append(data)
 
-def getTrainLabel(train_label):
-    data_ls = []
+    train_label_ls = []
     for f in train_label:
         data = np.load(os.path.join('./data/raw/', f))
-        data_ls.append(data)
-    return np.concatenate(data_ls)
+        train_label_ls.append(data)
 
-def getTestData(test_data):
-    return np.load(os.path.join('./data/raw/', test_data))
-def getTestLabel(test_label):
-    return np.load(os.path.join('./data/raw/', test_label))
+    test_data_ls = []
+    for f in test_data:
+        data = np.load(os.path.join('./data/raw/', f))
+        test_data_ls.append(data)
+
+    test_label_ls = []
+    for f in test_label:
+        data = np.load(os.path.join('./data/raw/', f))
+        test_label_ls.append(data)
+
+    return np.concatenate(train_data_ls), np.concatenate(train_label_ls), np.concatenate(test_data_ls), np.concatenate(test_label_ls)
+
 def getExampleData():
     return
 def getExampleLabel():
