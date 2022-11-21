@@ -3,16 +3,12 @@
 import sys
 import os
 import json
+from src.etl import *
+from src.classifier import *
+from src.color_transform import *
+from src.optimal_transport import *
 
-
-
-#import model
-#import optimal trans
-#import testmetric
-
-
-
-# 
+#
 # parser.add_argument('--batch_size', type = int, default = 1,
 #         help = 'input batch size for training (default: 1)')
 
@@ -22,28 +18,52 @@ import json
 def main(targets):
 	#target=targets.target
     data_to_use=targets[0]
+
     if data_to_use =='test':
 		#TODO: load test data
         print('test on test data')
-    elif data_to_use == 'all':
-	#TODO: load all data
 
+    elif data_to_use == 'all':
+        #TODO: load all data
+        with open('config/data-params.json', 'r') as fh:
+            data_params = json.load(fh)
+        X_train, y_train, X_test, y_test = getData(**data_params)
         print('run on all data')
-    elif data_to_use == 'clean':
+
+    #elif data_to_use == 'clean':
 	#TODO: clean all the generate result files
 
-        print('clear to clean repo')
-    else:
-        print('No clear instruction')
+    #    print('clear to clean repo')
+    #else:
+    #    print('No clear instruction')
 
-	#TODO: 
-	#train classifier on given data
-	#apply classifier on given data
+	#train classifier on training data, predict on testing data and write prediction
+    if 'model' in targets:
+        with open('config/model-params.json', 'r') as fh:
+            model_params = json.load(fh)
+        clf = clf_build(X_train, y_train, "RandomForestClassifier")
+        clf_predict(clf, X_test, y_test, "data/out/intial_preds.csv")
 
-	#train OT on given data
+    #color transform on all data, write data in data/temp
+    if 'color_transform' in targets:
+        X_train_gray = grayscale(X_train, "X_train_gray")
+        X_test_gray = grayscale(X_test, "X_test_gray")
+
+    #use classifier on color transformed data
+    if 'test1' in targets:
+        clf_predict(clf, X_test_gray, y_test, "data/out/grayscale_preds.csv")
+
+    #train OT on given data
+    if 'ot_build' in targets:
+        Xs, Xt = sample_color(X_train_gray， X_train, 5000)
+        cot = color_ot_build(Xs, Xt, ot.da.EMDTransport())
 	#apply OT on given data
+    if 'ot_transform' in targets:
+        X_test_ot = color_ot_transform(X_test_gray, cot)
 
 	#test, validate result, produce output
+    if 'test2' in targets:
+        clf_predict(clf, X_test_ot, y_test, "data/out/ot_preds.csv")
 
 
 # # RUN Way1

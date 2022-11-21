@@ -1,0 +1,4 @@
+{
+    "modeltype": "RandomForestClassifier",
+    "predictions_fp": "data/out/preds.csv"
+}
