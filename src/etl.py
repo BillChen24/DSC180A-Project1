@@ -10,6 +10,7 @@
 #     return dict[b'labels']
 
 import numpy as np
+import os
 # def getTrainData(train_data):
 #     data_ls = []
 #     for f in train_data:
