@@ -20,15 +20,26 @@ def main(targets):
     data_to_use=targets[0]
 
     if data_to_use =='test':
-		#TODO: load test data
-        print('test on test data')
+        with open('config/test-params.json', 'r') as fh:
+            data_params = json.load(fh)
+        X_train, y_train, X_test, y_test = getData(**data_params)
+        print('load test data')
+        with open('config/model-params.json', 'r') as fh:
+            model_params = json.load(fh)
+        clf = clf_build(X_train, y_train, "RandomForestClassifier")
+        clf_predict(clf, X_test, y_test, "data/out/intial_preds_test.csv")
+        print('initial model on test')
+        X_train_gray = grayscale(X_train, "X_train_gray")
+        X_test_gray = grayscale(X_test, "X_test_gray")
+        print('do gray scale')
+        
 
     elif data_to_use == 'all':
         #TODO: load all data
         with open('config/data-params.json', 'r') as fh:
             data_params = json.load(fh)
         X_train, y_train, X_test, y_test = getData(**data_params)
-        print('run on all data')
+        print('load all data')
 
     #elif data_to_use == 'clean':
 	#TODO: clean all the generate result files
@@ -37,7 +48,7 @@ def main(targets):
     #else:
     #    print('No clear instruction')
 
-	#train classifier on training data, predict on testing data and write prediction
+    #train classifier on training data, predict on testing data and write prediction
     if 'model' in targets:
         with open('config/model-params.json', 'r') as fh:
             model_params = json.load(fh)
@@ -55,7 +66,7 @@ def main(targets):
 
     #train OT on given data
     if 'ot_build' in targets:
-        Xs, Xt = sample_color(X_train_gray， X_train, 5000)
+        Xs, Xt = sample_color(X_train_gray,X_train, 5000)
         cot = color_ot_build(Xs, Xt, ot.da.EMDTransport())
 	#apply OT on given data
     if 'ot_transform' in targets:
