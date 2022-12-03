@@ -1,15 +1,49 @@
 import numpy as np
 import ot
 
-def sample_color(X_source, X_target, n):
-    sample1 = np.random.randint(X_source.shape[0], size = n)
-    sample2 = np.random.randint(X_target.shape[0], size = n)
-    return X_source[sample1], X_target[sample2]
+def sample_color_with_class(X_train, y_train, X_gray, n, class_label):
+    X_target = X_train[y_train == class_label]
+    
+    X_target_r_pool = np.array([x[:1024] for x in X_target]).flatten()
+    X_target_g_pool = np.array([x[1024:2048] for x in X_target]).flatten()
+    X_target_b_pool = np.array([x[2048:] for x in X_target]).flatten()
+    
+    X_source_r_pool = np.array([x[:1024] for x in X_gray]).flatten()
+    X_source_g_pool = np.array([x[1024:2048] for x in X_gray]).flatten()
+    X_source_b_pool = np.array([x[2048:] for x in X_gray]).flatten()
+    
+    sample1 = np.random.randint(len(X_target_r_pool), size = n)
+    sample2 = np.random.randint(len(X_source_r_pool), size = n)
+    
+    X_target_r = X_target_r_pool[sample1]
+    X_target_g = X_target_g_pool[sample1]
+    X_target_b = X_target_b_pool[sample1]
+    
+    X_source_r = X_source_r_pool[sample1]
+    X_source_g = X_source_g_pool[sample1]
+    X_source_b = X_source_b_pool[sample1]
+    
+    target_sample = np.array([[r, g, b] for r,g,b in zip(X_target_r, X_target_g, X_target_b)])
+    source_sample = np.array([[r, g, b] for r,g,b in zip(X_source_r, X_source_g, X_source_b)])
+    
+    return target_sample, source_sample
 
 def color_ot_build(X_source, X_target, ot_type = ot.da.EMDTransport()):
-    ot_type.fit(Xs=Xs, Xt=Xt)
+    ot_type.fit(Xs=X_source, Xt=X_target)
     return ot_type
 
-def color_ot_transform(X_test_source, ot_type):
-    X_test_ot = ot_type.transform(X_test_source)
-    return X_test_ot
+def color_ot_transform(X_test_gray, ot_type):
+    r = X_test_gray[:1024]
+    g = X_test_gray[1024:2048]
+    b = X_test_gray[2048:]
+    to_transform = np.array([[r0,g0,b0] for r0,b0,g0 in zip(r,g,b)])
+    transformed = ot_type.transform(to_transform)
+    transformed = transformed.transpose().flatten().astype(int)
+    transformed = np.array([x if x > 0 else 0 for x in transformed])
+    return transformed
+
+    
+
+
+
+
