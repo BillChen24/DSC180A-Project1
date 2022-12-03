@@ -49,8 +49,22 @@ def getData(outdir, train_data, train_label, test_data, test_label):
     for f in test_label:
         data = np.load(os.path.join(outdir, f))
         test_label_ls.append(data)
+        
+    animal_labels = [2, 4, 5, 6, 7]
+    
+    X_train = np.concatenate(train_data_ls)
+    y_train = np.concatenate(train_label_ls)
+    X_test = np.concatenate(test_data_ls)
+    y_test = np.concatenate(test_label_ls)
+    
+    train_query = [l in animal_labels for l in y_train]
+    X_train = X_train[train_query]
+    y_train = y_train[train_query]
+    test_query = [l in animal_labels for l in y_test]
+    X_test = X_test[test_query]
+    y_test = y_test[test_query]
 
-    return np.concatenate(train_data_ls), np.concatenate(train_label_ls), np.concatenate(test_data_ls), np.concatenate(test_label_ls)
+    return X_train, y_train, X_test, y_test
 
 def getExampleData():
     return

@@ -10,3 +10,5 @@ def grayscale(X, filename = "gray"):
     out = np.array(grays)
     #np.save("data/temp/"+filename, out)
     return out
+
+  
