@@ -4,6 +4,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score,confusion_matrix,classification_report
 from sklearn.model_selection import train_test_split
 import pickle
+import numpy as np
 
 def models():
 
@@ -78,7 +79,7 @@ def model_selelection_RandomForestClassifier(train_data_X, train_data_Y,
 
 
 def clf_build(X_train,y_train,
-              modeltype):
+              modeltype='RandomForestClassifier'):
 
     clf = models()[modeltype] # get model from dict
     #clf = clf(**params) # instantiate model w/given params
@@ -94,9 +95,9 @@ def clf_build(X_train,y_train,
         except:
             print('Non pre trained model, Train by pre determined best hyperparameters')
             best_hyper={'bootstrap': True, 'ccp_alpha': 0.0, 'class_weight': None, 
-                        'criterion': 'gini', 'max_depth': 50, 'max_features': 'sqrt', 
+                        'criterion': 'gini', 'max_depth': 20, 'max_features': 'sqrt', 
                         'max_leaf_nodes': None, 'max_samples': None, 'min_impurity_decrease': 0.0, 
-                        'min_samples_leaf': 10, 'min_samples_split': 2, 'min_weight_fraction_leaf': 0.0, 
+                        'min_samples_leaf': 5, 'min_samples_split': 2, 'min_weight_fraction_leaf': 0.0, 
                         'n_estimators': 100, 'n_jobs': None, 'oob_score': False, 
                         'random_state': 28, 'verbose': 0, 'warm_start': False}
             clf=clf.set_params(**best_hyper)
@@ -108,10 +109,70 @@ def clf_predict(clf, X_test, y_test, predictions_fp):
     predictions = clf.predict(X_test)
     out = pd.concat([pd.Series(y_test), pd.Series(predictions)], axis=1)
     out.to_csv(predictions_fp, header = ['label', 'prediction'])
-    print(classification_report(y_test, predictions))
+    accuracy_report(y_test, predictions)
     return predictions
 
 
 
 def accuracy_report(y_test, y_pred):
-    return classification_report(y_pred, y_test)
+    report =  classification_report(y_pred, y_test)
+    print(report)
+    return report
+
+def report_votes(X_in, model = 'result/best_rfc_model.sav'):
+    '''
+    Takes in Randomforest Model or path to read the model
+    X: array of size Nx3072
+    
+    output: array of Nx5, with N equals to the row of given X
+    '''
+    #Read in model if given path to best
+    if type(model) == str:
+        try:
+            model = pickle.load(open(model, 'rb'))
+            print('Read Pre Trained Best Model')
+            
+        except:
+            print('Fail to read pretrained model')
+    else:
+        print('use input model')
+        
+    # make prediction
+    n_size = X_in.shape[0]
+    
+    #count votes in the tree
+    result_arr=np.zeros((n_size, 5))
+    for tree in model.estimators_:
+        result = tree.predict(X_in)
+        for idx in range(n_size):
+            result_arr[idx][int(result[idx])]+=1
+            
+    return result_arr
+
+
+def prediction_df(X, y,model='result/best_rfc_model.sav', outdf_path = 'result/prediction_table.csv'):
+    '''
+    Take in data X, data label
+    model: model or path to the best model
+    
+    return dataframe with iamge true label, predictions and prediction vote count
+    '''
+    n_size = X.shape[0]
+    #initial table
+    df = pd.DataFrame(columns = [ 'true_label','predicted_label','predict_vote'])
+    df['predict_vote'] = np.arange(n_size)
+    
+    # vote count:
+    vote_count=report_votes(X, model = model)
+    
+    #get predicted label
+    predictions=np.array([2,4,5,6,7])[vote_count.argmax(axis=1)]
+    
+    df['true_label'] =y
+    df['predicted_label'] = predictions
+    def put_in_count(idx):
+        return vote_count[idx].tolist()
+    df['predict_vote'] = df['predict_vote'].apply(put_in_count)
+    df['max_count'] = vote_count.max(axis=1).astype(int)
+    df.to_csv(outdf_path)
+    return df
