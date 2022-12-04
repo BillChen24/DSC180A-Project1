@@ -50,39 +50,45 @@ def main(targets):
     data_paths=filte_transport_data(X_test, y_test)
     
     #make predction and get prediction tables
-    create_pred_table(data_paths, model, y_test)
+    if 'prediction_table' in targets:
+        prediction_paths=create_pred_table(data_paths, model, y_test)
+    if 'prediction_report' in targets:
+        reports = create_pred_acc_report(data_paths, model, y_test)
+        
+        
+    if 'plot' in targets:
+        ...
         
         
         
-        
 
-    #train classifier on training data, predict on testing data and write prediction
-    if 'model' in targets:
-        with open('config/model-params.json', 'r') as fh:
-            model_params = json.load(fh)
-        clf = clf_build(X_train, y_train, "RandomForestClassifier")
-        clf_predict(clf, X_test, y_test, "data/out/intial_preds.csv")
+#     #train classifier on training data, predict on testing data and write prediction
+#     if 'model' in targets:
+#         with open('config/model-params.json', 'r') as fh:
+#             model_params = json.load(fh)
+#         clf = clf_build(X_train, y_train, "RandomForestClassifier")
+#         clf_predict(clf, X_test, y_test, "data/out/intial_preds.csv")
 
-    #color transform on all data, write data in data/temp
-    if 'color_transform' in targets:
-        X_train_gray = grayscale(X_train, "X_train_gray")
-        X_test_gray = grayscale(X_test, "X_test_gray")
+#     #color transform on all data, write data in data/temp
+#     if 'color_transform' in targets:
+#         X_train_gray = grayscale(X_train, "X_train_gray")
+#         X_test_gray = grayscale(X_test, "X_test_gray")
 
-    #use classifier on color transformed data
-    if 'test1' in targets:
-        clf_predict(clf, X_test_gray, y_test, "data/out/grayscale_preds.csv")
+#     #use classifier on color transformed data
+#     if 'test1' in targets:
+#         clf_predict(clf, X_test_gray, y_test, "data/out/grayscale_preds.csv")
 
-    #train OT on given data
-    if 'ot_build' in targets:
-        Xs, Xt = sample_color(X_train_gray,X_train, 5000)
-        cot = color_ot_build(Xs, Xt, ot.da.EMDTransport())
-	#apply OT on given data
-    if 'ot_transform' in targets:
-        X_test_ot = color_ot_transform(X_test_gray, cot)
+#     #train OT on given data
+#     if 'ot_build' in targets:
+#         Xs, Xt = sample_color(X_train_gray,X_train, 5000)
+#         cot = color_ot_build(Xs, Xt, ot.da.EMDTransport())
+# 	#apply OT on given data
+#     if 'ot_transform' in targets:
+#         X_test_ot = color_ot_transform(X_test_gray, cot)
 
-	#test, validate result, produce output
-    if 'test2' in targets:
-        clf_predict(clf, X_test_ot, y_test, "data/out/ot_preds.csv")
+# 	#test, validate result, produce output
+#     if 'test2' in targets:
+#         clf_predict(clf, X_test_ot, y_test, "data/out/ot_preds.csv")
 
 def train_model(train_data, train_label,test_data, test_label,targets = None):
     '''
@@ -101,12 +107,16 @@ def train_model(train_data, train_label,test_data, test_label,targets = None):
     # Produce report by class
     print('Performance on Training Set')
     clf_predict(model,train_data, train_label, 'result/prediction1.csv')
-    #clf_predict(model,test_data, test_label, 'result/prediction1.csv')
+    print('Performance on Test Set')
+    clf_predict(model,test_data, test_label, 'result/prediction1.csv')
     # prediction on filtered data, save the result to result
     prediction_df(train_data, train_label, 
                          model = model,
+                        outdf_path = 'result/prediction_train.csv')
+    prediction_df(test_data, test_label, 
+                         model = model,
                         outdf_path = 'result/prediction_original.csv')
-    print('Prediction Table saved at', 'result/prediction_original.csv')
+    print('Prediction Table on Test set saved at', 'result/prediction_original.csv')
     return model
 
 
@@ -178,6 +188,64 @@ def create_pred_table(data_fp_dict, model, test_label, result_fp = 'result/'):
                             outdf_path = outdf_path)
             return_dict['trans_within_class'][fp_idx] = outdf_path
             print('prediction table save to', outdf_path)
+        
+    return return_dict
+
+
+def create_pred_acc_report(data_fp_dict, model, test_label):
+    '''
+    data_fp_dict: dictionary contain keys: filtered, trans_without_class, trans_with_class, trans_within_class
+    takes in pretrained model
+    '''
+    return_dict = data_fp_dict.copy()
+    # #Filter WithOUT transformer
+    #  if data_fp_dict['filtered'] is not None:
+    #     fp=data_fp_dict['filtered']
+    #     test_data=np.load(fp)
+    #     fp=fp.split('/')
+    #     outdf_path = 'result/'+fp[-2]+'_'+fp[-1].replace('npy', '')
+    #     print('Performance on Data ', outdf_path)
+    #     pred = model.predict(test_data)
+    #     report = accuracy_report(test_label, pred)
+    #     return_dict['filtered'] = report
+    
+    
+    #WITHOUT class Transformed
+    if data_fp_dict['trans_without_class'] is not None:
+        fp=data_fp_dict['trans_without_class']
+        test_data=np.load(fp)
+        fp=fp.split('/')
+        outdf_path = 'result/'+fp[-2]+'_'+fp[-1].replace('npy', '')
+        print('Performance on Data ', outdf_path)
+        pred = model.predict(test_data)
+        report = accuracy_report(test_label, pred)
+        return_dict['trans_without_class'] = report
+        
+        
+    #WITH CLASS TRANSFORMED
+    if data_fp_dict['trans_with_class'] is not None:
+        for fp_idx in range(len(data_fp_dict['trans_with_class'])):
+            fp = data_fp_dict['trans_with_class'][fp_idx]
+            test_data=np.load(fp)
+            fp=fp.split('/')
+            outdf_path = 'result/'+fp[-2]+'_'+fp[-1].replace('npy', '')
+            print('Performance on Data ', outdf_path)
+            pred = model.predict(test_data)
+            report = accuracy_report(test_label, pred)
+            return_dict['trans_with_class'][fp_idx] = report
+           
+    #WITH CLASS TRANSFORMED
+    if data_fp_dict['trans_within_class'] is not None:
+        for fp_idx in range(len(data_fp_dict['trans_within_class'])):
+            fp = data_fp_dict['trans_within_class'][fp_idx]
+            test_data=np.load(fp)
+            fp=fp.split('/')
+            outdf_path = 'result/'+fp[-2]+'_'+fp[-1].replace('npy', '')
+            print('Performance on Data ', outdf_path)
+            pred = model.predict(test_data)
+            report = accuracy_report(test_label, pred)
+            return_dict['trans_within_class'][fp_idx] = report
+            
         
     return return_dict
     
