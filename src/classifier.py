@@ -54,7 +54,7 @@ def model_selelection_RandomForestClassifier(train_data_X, train_data_Y,
                 hyperparam['result'] = rfc.score(val_X,val_Y)
 
                 results.loc[exp_id]=hyperparam
-                print('finish training experiment:', exp_id)
+                print('finish training experiment:', exp_id, hyperparam['result'])
                 exp_id+=1
                 
     best_result = (results
@@ -96,7 +96,6 @@ def clf_build(X_train,y_train,
             print('Non pre trained model, Train by pre determined best hyperparameters')
             best_hyper={'bootstrap': True, 'ccp_alpha': 0.0, 'class_weight': None, 
                         'criterion': 'gini', 'max_depth': 20, 'max_features': 'sqrt', 
-                        'max_leaf_nodes': None, 'max_samples': None, 'min_impurity_decrease': 0.0, 
                         'min_samples_leaf': 5, 'min_samples_split': 2, 'min_weight_fraction_leaf': 0.0, 
                         'n_estimators': 100, 'n_jobs': None, 'oob_score': False, 
                         'random_state': 28, 'verbose': 0, 'warm_start': False}

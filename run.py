@@ -19,12 +19,14 @@ def main(targets):
     print(targets)
     # -------------- DATA LOADING -----------------
     data_to_use=targets[0]
-    
+    test_trial=False
     if data_to_use =='test':
+        test_trial=True
         with open('config/test-params.json', 'r') as fh:
             data_params = json.load(fh)
         X_train, y_train, X_test, y_test = getData(**data_params)
         print('load test data')
+        print('train_data:', X_train.shape[0], 'test data:', X_test.shape[0])
         # with open('config/model-params.json', 'r') as fh:
         #     model_params = json.load(fh)
         # clf = clf_build(X_train, y_train, "RandomForestClassifier")
@@ -41,18 +43,22 @@ def main(targets):
             data_params = json.load(fh)
         X_train, y_train, X_test, y_test = getData(**data_params)
         print('load all data')
+        print(X_train.shape, X_test.shape)
+        print('train_data:', X_train.shape[0], 'test data:', X_test.shape[0])
         
         
     # Train / Read Model:
     model = train_model( X_train, y_train, X_test, y_test ,targets = targets)    
     
     #filter, transform
-    data_paths=filte_transport_data(X_test, y_test)
+    data_paths=filte_transport_data(X_test, y_test, test = test_trial)
     
     #make predction and get prediction tables
+    
     if 'prediction_table' in targets:
+        
         prediction_paths=create_pred_table(data_paths, model, y_test)
-    if 'prediction_report' in targets:
+    else:
         reports = create_pred_acc_report(data_paths, model, y_test)
         
         
@@ -120,18 +126,26 @@ def train_model(train_data, train_label,test_data, test_label,targets = None):
     return model
 
 
-def filte_transport_data(X, y):
+def filte_transport_data(X, y, test=False):
     #return path to the folder containing the filter, trans_without, trains_with class
     #DO NOT CHANGE KEY NAME!
-    return_dic={'filtered':'data/temp/filtered/filtered.npy',
-               'trans_without_class': 'data/temp/transformer_without_class/transformed.npy',
-               'trans_with_class': [f'data/temp/transformer_with_class/transformed_{i}.npy' for i in [2,4,5,6,7]],
-               'trans_within_class': [f'data/temp/transformer_within_class/transformed_{i}.npy' for i in [2,4,5,6,7]]}
-    if os.path.exists(return_dic['trans_without_class']):
-        return return_dic
-    else: #if no data exist, has to filter, train transporter, and transport data
-        ...
-                                                           
+    if test==False:
+        return_dic={'filtered':'data/temp/filtered/filtered.npy',
+                   'trans_without_class': ['data/temp/transformer_without_class/transformed.npy',
+                                          'data/temp/transformer_without_class/transformed_1000.npy'],
+                   'trans_with_class': [f'data/temp/transformer_with_class/transformed_{i}.npy' for i in [2,4,5,6,7]],
+                   'trans_within_class': [f'data/temp/transformer_within_class/transformed_{i}.npy' for i in [2,4,5,6,7]]}
+        if os.path.exists(return_dic['trans_without_class'][0]):
+            return return_dic
+        #else: #if no data exist, has to filter, train transporter, and transport data
+    else: # if apply to test data set, read from test data set
+        print('Use test trans data')
+        return_dic={'filtered':'test/temp/filtered/filtered.npy',
+                   'trans_without_class':[ 'test/temp/transformer_without_class/transformed.npy'],
+                   'trans_with_class': [f'test/temp/transformer_with_class/transformed_{i}.npy' for i in [2,4,5,6,7]],
+                   'trans_within_class': [f'test/temp/transformer_within_class/transformed_{i}.npy' for i in [2,4,5,6,7]]}
+        if os.path.exists(return_dic['trans_without_class'][0]):
+            return return_dic                                                  
 
 def create_pred_table(data_fp_dict, model, test_label, result_fp = 'result/'):
     '''
@@ -154,15 +168,16 @@ def create_pred_table(data_fp_dict, model, test_label, result_fp = 'result/'):
     
     #WITHOUT class Transformed
     if data_fp_dict['trans_without_class'] is not None:
-        fp=data_fp_dict['trans_without_class']
-        test_data=np.load(fp)
-        fp=fp.split('/')
-        outdf_path = 'result/'+fp[-2]+'_'+fp[-1].replace('npy', 'csv')
-        prediction_df(test_data, test_label, 
-                         model = model,
-                        outdf_path = outdf_path)
-        return_dict['trans_without_class'] = outdf_path
-        print('prediction table save to', outdf_path)
+        for fp_idx in range(len(data_fp_dict['trans_without_class'])):
+            fp = data_fp_dict['trans_without_class'][fp_idx]
+            test_data=np.load(fp)
+            fp=fp.split('/')
+            outdf_path = 'result/'+fp[-2]+'_'+fp[-1].replace('npy', 'csv')
+            prediction_df(test_data, test_label, 
+                             model = model,
+                            outdf_path = outdf_path)
+            return_dict['trans_without_class'][fp_idx] = outdf_path
+            print('prediction table save to', outdf_path)
         
     #WITH CLASS TRANSFORMED
     if data_fp_dict['trans_with_class'] is not None:
@@ -177,17 +192,17 @@ def create_pred_table(data_fp_dict, model, test_label, result_fp = 'result/'):
             return_dict['trans_with_class'][fp_idx] = outdf_path
             print('prediction table save to', outdf_path)
     #WITH CLASS TRANSFORMED
-    if data_fp_dict['trans_within_class'] is not None:
-        for fp_idx in range(len(data_fp_dict['trans_within_class'])):
-            fp = data_fp_dict['trans_within_class'][fp_idx]
-            test_data=np.load(fp)
-            fp=fp.split('/')
-            outdf_path = 'result/'+fp[-2]+'_'+fp[-1].replace('npy', 'csv')
-            prediction_df(test_data, test_label, 
-                             model = model,
-                            outdf_path = outdf_path)
-            return_dict['trans_within_class'][fp_idx] = outdf_path
-            print('prediction table save to', outdf_path)
+    # if data_fp_dict['trans_within_class'] is not None:
+    #     for fp_idx in range(len(data_fp_dict['trans_within_class'])):
+    #         fp = data_fp_dict['trans_within_class'][fp_idx]
+    #         test_data=np.load(fp)
+    #         fp=fp.split('/')
+    #         outdf_path = 'result/'+fp[-2]+'_'+fp[-1].replace('npy', 'csv')
+    #         prediction_df(test_data, test_label, 
+    #                          model = model,
+    #                         outdf_path = outdf_path)
+    #         return_dict['trans_within_class'][fp_idx] = outdf_path
+    #         print('prediction table save to', outdf_path)
         
     return return_dict
 
@@ -212,15 +227,16 @@ def create_pred_acc_report(data_fp_dict, model, test_label):
     
     #WITHOUT class Transformed
     if data_fp_dict['trans_without_class'] is not None:
-        fp=data_fp_dict['trans_without_class']
-        test_data=np.load(fp)
-        fp=fp.split('/')
-        outdf_path = 'result/'+fp[-2]+'_'+fp[-1].replace('npy', '')
-        print('Performance on Data ', outdf_path)
-        pred = model.predict(test_data)
-        report = accuracy_report(test_label, pred)
-        return_dict['trans_without_class'] = report
-        
+        for fp_idx in range(len(data_fp_dict['trans_without_class'])):
+            fp = data_fp_dict['trans_without_class'][fp_idx]
+            test_data=np.load(fp)
+            
+            fp=fp.split('/')
+            outdf_path = 'result/'+fp[-2]+'_'+fp[-1].replace('npy', '')
+            print('Performance on Data ', outdf_path)
+            pred = model.predict(test_data)
+            report = accuracy_report(test_label, pred)
+            return_dict['trans_without_class'][fp_idx] = report
         
     #WITH CLASS TRANSFORMED
     if data_fp_dict['trans_with_class'] is not None:
@@ -235,16 +251,16 @@ def create_pred_acc_report(data_fp_dict, model, test_label):
             return_dict['trans_with_class'][fp_idx] = report
            
     #WITH CLASS TRANSFORMED
-    if data_fp_dict['trans_within_class'] is not None:
-        for fp_idx in range(len(data_fp_dict['trans_within_class'])):
-            fp = data_fp_dict['trans_within_class'][fp_idx]
-            test_data=np.load(fp)
-            fp=fp.split('/')
-            outdf_path = 'result/'+fp[-2]+'_'+fp[-1].replace('npy', '')
-            print('Performance on Data ', outdf_path)
-            pred = model.predict(test_data)
-            report = accuracy_report(test_label, pred)
-            return_dict['trans_within_class'][fp_idx] = report
+#     if data_fp_dict['trans_within_class'] is not None:
+#         for fp_idx in range(len(data_fp_dict['trans_within_class'])):
+#             fp = data_fp_dict['trans_within_class'][fp_idx]
+#             test_data=np.load(fp)
+#             fp=fp.split('/')
+#             outdf_path = 'result/'+fp[-2]+'_'+fp[-1].replace('npy', '')
+#             print('Performance on Data ', outdf_path)
+#             pred = model.predict(test_data)
+#             report = accuracy_report(test_label, pred)
+#             return_dict['trans_within_class'][fp_idx] = report
             
         
     return return_dict
