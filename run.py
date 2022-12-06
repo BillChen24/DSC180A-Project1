@@ -132,7 +132,8 @@ def filte_transport_data(X, y, test=False):
     if test==False:
         return_dic={'filtered':'data/temp/filtered/filtered.npy',
                    'trans_without_class': ['data/temp/transformer_without_class/transformed.npy',
-                                          'data/temp/transformer_without_class/transformed_1000.npy'],
+                                          'data/temp/transformer_without_class/transformed_1000.npy',
+                                          'data/temp/transformer_without_class/transformed_3000.npy'],
                    'trans_with_class': [f'data/temp/transformer_with_class/transformed_{i}.npy' for i in [2,4,5,6,7]],
                    'trans_within_class': [f'data/temp/transformer_within_class/transformed_{i}.npy' for i in [2,4,5,6,7]]}
         if os.path.exists(return_dic['trans_without_class'][0]):
