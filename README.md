@@ -19,3 +19,9 @@ Run
 python run.py all
 ```
 To generate the report on the Whole dataset
+
+After all, run following command lines to remove the data and output files from runing through this project.
+```
+rm -r result
+rm -r data
+```
